@@ -1,70 +1,61 @@
 from argparse import ArgumentParser
-import pandas as pd
-
-def isNaN(number):
-    """ Check a number is a NaN or not 
-        Args: Number
-        Return: True if number is NaN, False otherwise
-    """
-
-    if (isinstance(number, float) and number != number):
-        return True
-    return False
-
-def isNumeric(values):
-    for value in values:
-        if (isNaN(value)): continue
-        if (type(value) != int and type(value) != float): return False
+from utility import *
     
-    return True
-
 def run(args):
-    df = pd.read_csv(args.input)
-    data = df.to_dict('list')
+    df = readData(args.input)
+    data = df.to_dict(orient='list')
 
-    for key in data:
-        if (isNumeric(data[key]) == False): continue
-        values = [value for value in data[key] if (isNaN(value) == False)]
-        if (args.method == "z_score"):
+    for column in data:
+        if not isNumeric(data, column):
+            continue
+        values = [value for value in data[column] if not isNaN(value)]
 
-            mean = 0
-            sd = 0
-            if (len(values) != 0):
-                mean = sum(values) / len(values)
-                sd = (sum([(value - mean) ** 2 for value in values]) / len(values)) **  (1/2)
-
-            for i in range(len(data[key])):
-                if (isNaN(data[key][i]) == True or sd == 0): 
-                    data[key][i] = 0
-                else:
-                    data[key][i] = (data[key][i] - mean) / sd
-
+        if args.method == 'z_score':
+            data = normalize_using_z_score(data, column, values)
+        elif args.method == 'min_max':
+            data = normalize_using_min_max(data, column, values, args.min, args.max)
         else:
-            min_value = 0
-            max_value = 0
-            if (len(values) > 0):
-                min_value = min(values)
-                max_value = max(values)
+            raise ValueError('Invalid normalization method: {}'.format(args.method))
+
+    writeData(data, args.output)
+
+
+def normalize_using_z_score(data, column, values):
+    mean, sd = 0, 0
+    if len(values) != 0:
+        mean = sum(values) / len(values)
+        sd = (sum([(value - mean) ** 2 for value in values]) / len(values)) ** 0.5
+
+    for i in range(len(data[column])):
+        if isNaN(data[column][i]) or sd == 0:
+            data[column][i] = 0
+        else:
+            data[column][i] = (data[column][i] - mean) / sd
             
-            for i in range(len(data[key])):
-                if (isNaN(data[key][i]) == True or (min_value == 0 and max_value == 0)):
-                    data[key][i] = 0
-                else:
-                    data[key][i] = ((data[key][i] - min_value) / (max_value - min_value)) * (args.max - args.min) + args.min
-    df = pd.DataFrame(data)
-    df.to_csv(args.output, index = False)
+    return data
 
 
-def main():
-    argparser = ArgumentParser()
-    argparser.add_argument('-mtd', '--method', default="min_max", choices=['min_max', 'z_score'], help='You must be input method to normalize')
-    argparser.add_argument('-min', '--min', default=0, type=float, help='Input a min value for min_max normalize')
-    argparser.add_argument('-max', '--max', default=1, type=float, help='Input a max value for min_max normalize')
-    argparser.add_argument('-in', '--input', default="./Data/house-prices.csv", help='You must be input file path')
-    argparser.add_argument('-out', '--output', default="./Data/result.csv", help='You must be input file path')
-    args = argparser.parse_args()
+def normalize_using_min_max(data, column, values, min_value_scaling, max_value_scaling):
+
+    min_value, max_value = 0, 0
+    if (len(values) > 0):
+        min_value = min(values)
+        max_value = max(values)
+
+    for i in range(len(data[column])):
+        if isNaN(data[column][i]) or min_value == max_value:
+            data[column][i] = 0
+        else:
+            data[column][i] = ((data[column][i] - min_value) / (max_value - min_value)) * (max_value_scaling - min_value_scaling) + min_value_scaling
+    return data
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('--method', default='min_max', choices=['min_max', 'z_score'], help='Input method for normalize')
+    parser.add_argument('--min', default=0, type=float, help='Input a min value for min_max normalize')
+    parser.add_argument('--max', default=1, type=float, help='Input a max value for min_max normalize')
+    parser.add_argument('--input', default='./Data/house-prices.csv', help='You must be input file path')
+    parser.add_argument('--output', default='./Data/result.csv', help='You must be input file path')
+    args = parser.parse_args()
 
     run(args)
-
-if (__name__ == "__main__"):
-    main()
