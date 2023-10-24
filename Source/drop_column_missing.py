@@ -6,7 +6,7 @@ def isNaN(number):
         Args: Number
         Return: True if number is NaN, False otherwise
     """
-
+    
     if (isinstance(number, float) and number != number):
         return True
     return False
@@ -14,19 +14,18 @@ def isNaN(number):
 def run(args):
     df = pd.read_csv(args.input)
     data = df.to_dict('list')
-    removeRows = []
+    removeColumns = []
 
-    for i in range(len(data[list(data.keys())[0]])):
+    for column in data:
         count = 0
-        for key in data:
-            if (isNaN(data[key][i]) == True): count += 1
-        if (count > args.percentage * len(data.keys()) / 100):
-            removeRows.append(i)
+        for value in data[column]:
+            if (isNaN(value)): count += 1
+        
+        if (count > args.percentage * len(data[column]) / 100):
+            removeColumns.append(column)
 
-    removeRows.reverse()
-    for row in removeRows:
-        for key in data:
-            data[key].pop(row)
+    for column in removeColumns:
+        data.pop(column)
 
     df = pd.DataFrame(data)
     df.to_csv(args.output, index = False)
