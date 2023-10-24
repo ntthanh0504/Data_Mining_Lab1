@@ -2,21 +2,26 @@ from argparse import ArgumentParser
 import pandas as pd
 
 def isNaN(number):
+    """ Check a number is a NaN or not 
+        Args: Number
+        Return: True if number is NaN, False otherwise
+    """
+    
     if (isinstance(number, float) and number != number):
         return True
     return False
 
 def run(args):
     df = pd.read_csv(args.input)
-    data = df.to_dict()
+    data = df.to_dict('list')
     removeColumns = []
 
     for column in data:
         count = 0
-        for index in data[column]:
-            if (isNaN(data[column][index])): count += 1
+        for value in data[column]:
+            if (isNaN(value)): count += 1
         
-        if (count > args.persentage * len(data[column]) / 100):
+        if (count > args.percentage * len(data[column]) / 100):
             removeColumns.append(column)
 
     for column in removeColumns:
@@ -28,7 +33,7 @@ def run(args):
 
 def main():
     argparser = ArgumentParser()
-    argparser.add_argument('-pst', '--persentage', default=50.0, type=float, help='You must be input persentage')
+    argparser.add_argument('-pct', '--percentage', default=50.0, type=float, help='You must be input percentage')
     argparser.add_argument('-in', '--input', default="./Data/house-prices.csv", help='You must be input file path')
     argparser.add_argument('-out', '--output', default="./Data/result.csv", help='You must be input file path')
     args = argparser.parse_args()
