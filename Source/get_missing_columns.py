@@ -15,7 +15,7 @@ def run(args):
             if isNaN(value):
                 columns.append(feature)
                 break
-    print('Number of columns with missing value : ', len(columns)) 
+    print('Columns with missing value : ', columns)
 
 def main():
     parser = ArgumentParser(description='Impute missing values in a CSV file')
